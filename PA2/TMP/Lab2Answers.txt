@@ -1,0 +1,96 @@
+QUESTION 1:
+The priority inversion problem could cause that a higher-priority process needs to wait for the completion of a lower-priority process.
+
+part 1:
+Priority inheritance is one approach to address this issue. Please give another approach and briefly describe its idea.
+
+Answer:
+
+--- Priority boosting :  priority boosting is a method to avoid the priority inversion situation. The basic idea here is to boost the priority of the ready process (that has less priority),
+while they are in critical section. this technique is used in Microsoft windows. 
+reference for the above information : https://docs.microsoft.com/en-us/windows/win32/procthread/priority-inversion?redirectedfrom=MSDN
+
+--- Priority ceiling : in this method , we assign a priority to the shared mutex. this priority is a distinct high priority, which then gets asgined to the process that acquire the mutex. 
+This is commonly used in real time systems. 
+Reference for above information : https://www.geeksforgeeks.org/priority-ceiling-protocol/
+
+part 2:
+the file task1.c is in the /TMP folder
+
+output of task1.c: 
+--------------------------
+16777216 bytes real mem
+106031 bytes Xinu code
+clock enabled
+
+Test locks_test
+-start writer, then sleep 1s. lock granted to write (prio 20)
+  writer: to acquire lock
+  writer: acquired lock, sleep 10s
+-start reader A, then sleep 1s. reader A(prio 25) blocked on the lock
+  reader A: to acquire lock
+
+ --> The updated priority of writer 1 ( pid = 46 ) is 25
+-start reader B, then sleep 1s. reader B(prio 30) blocked on the lock
+  reader B: to acquire lock
+
+ --> The updated priority of writer 1 ( pid = 46 ) is 30
+-kill reader B, then sleep 1s
+
+ --> The updated priority of writer 1 ( pid = 46 ) is 25
+-kill reader A, then sleep 1s
+
+ --> The updated priority of writer 1 ( pid = 46 ) is 20
+  writer: to release lock
+locks_test_end
+
+semaphore test
+-start writer, then sleep 1s. lock granted to write (prio 20)
+  writer: to acquire lock
+  writer: acquired lock, sleep 10s
+-start reader A, then sleep 1s. reader A(prio 25) blocked on the lock
+  reader A: to acquire lock
+
+ --> The updated priority of writer 1 ( pid = 46 ) is 20
+-start reader B, then sleep 1s. reader B(prio 30) blocked on the lock
+  reader B: to acquire lock
+
+ --> The updated priority of writer 1 ( pid = 46 ) is 20
+-kill reader B, then sleep 1s
+
+ --> The updated priority of writer 1 ( pid = 46 ) is 20
+-kill reader A, then sleep 1s
+
+ --> The updated priority of writer 1 ( pid = 46 ) is 20
+  writer: to release lock
+Sems_test_end
+--------------------------
+
+
+Observation : 
+
+lets look at The locks that i have implemented. we can see that the priority of the writer process ( pid = 46 ), is being increased from 20 , 
+to 25 and then to 30. The priority decreases to 25 , and then to 20 , omce the higher pririty process has finished. We can see that writer process ( pid = 46 )
+is dynamically changing priority and hence it cant keep any higher priority process waitring for crirtical section. 
+
+Lets look at the default XINU implemetation of semaphores. We can see that the writer process ( pid = 46 ) is not changing its priority. 
+On all the stages of the program , it is maintaining a priority of 20. this can cause high priority process to be blocked. We can see that the default 
+XINU semaphore implementation does not solve the problem of priority inversion. 
+
+
+
+QUESTION 2:
+_____________________________________________________________________________________________________________________________________________________
+Synchronization is a quite complex issue in operating systems. 
+To show your understanding about process synchronization, you are asked to point out a potential problem in this pesudo-code: task2_sync_issue.c. 
+Multiple reader processes can execute this code concurrently by calling reader(). You are asked to describe an issue it may cause and why it can happen. 
+
+Answer: 
+
+Issue 1: 
+There is a possibility that the writer process will be starved. consider a scenario, where there is one reader that is currently executing and has access to critical section.
+Now if a new reader tried to access the critical section, it does not has to wait. however, a writer tries to access the critical section, it has to wait. 
+Multiple readers can access the critical section at the same time . however, thats not the case with the writer.
+
+Issue 2: 
+'update_global_now()'. In case IF this function changes 'readcount' variable, then it might lead to synchronization issues.
